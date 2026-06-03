@@ -1,0 +1,89 @@
+version: "3.9"
+
+# ============================================================================
+# Docker Compose – Web Scraper Platform
+# ============================================================================
+#
+# Usage:
+#   docker compose up -d           # Start all services
+#   docker compose down            # Stop all services
+#   docker compose logs -f api     # Follow API logs
+#
+# Services:
+#   api       – FastAPI application
+#   worker    – Celery background worker
+#   db        – MySQL 8
+
+services:
+  # ── FastAPI Application ──────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scraper_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=scraper
+      - DB_PASS=scraper_password
+      - DB_NAME=scraper_db
+      - DB_DIALECT=mysql
+    volumes:
+      - ./uploads:/app/uploads
+      - ./exports:/app/exports
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Celery Worker ────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    container_name: scraper_worker
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=scraper
+      - DB_PASS=scraper_password
+      - DB_NAME=scraper_db
+      - DB_DIALECT=mysql
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── MySQL ────────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: scraper_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: scraper_db
+      MYSQL_USER: scraper
+      MYSQL_PASSWORD: scraper_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "scraper", "-pscraper_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

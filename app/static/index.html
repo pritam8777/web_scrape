@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraper Platform</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0b0d14;
+            --bg-alt: #0f1119;
+            --surface: #151823;
+            --surface2: #1c1f2e;
+            --surface3: #232738;
+            --border: #2a2e3f;
+            --border-light: #333852;
+            --text: #e8ebf5;
+            --text-secondary: #8b90a8;
+            --text-muted: #5e6380;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --primary-glow: rgba(99,102,241,0.25);
+            --success: #22c55e;
+            --success-bg: rgba(34,197,94,0.12);
+            --danger: #ef4444;
+            --danger-bg: rgba(239,68,68,0.12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245,158,11,0.12);
+            --info: #3b82f6;
+            --info-bg: rgba(59,130,246,0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 5px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+            --shadow-lg: 0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 70%, rgba(99,102,241,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(139,144,168,0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ─────────────────────────────────── */
+        .header {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, rgba(21,24,35,0.95) 0%, rgba(28,31,46,0.98) 50%, rgba(21,24,35,0.95) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            backdrop-filter: blur(20px);
+        }
+        .header-logo {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px var(--primary-glow);
+            flex-shrink: 0;
+        }
+        .header-info { flex: 1; }
+        .header h1 {
+            font-size: 20px; font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 1px;
+        }
+        .header-actions {
+            display: flex; gap: 10px; align-items: center;
+        }
+        .header-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+            color: var(--primary-light);
+            white-space: nowrap;
+        }
+
+        /* ── Stats Bar ──────────────────────────────── */
+        .stats-bar {
+            position: relative; z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-width: 1200px;
+            margin: 24px auto 0;
+            padding: 0 24px;
+        }
+        @media (max-width: 800px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            display: flex; align-items: center; gap: 14px;
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            border-color: var(--border-light);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        .stat-icon {
+            width: 42px; height: 42px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .stat-icon.blue { background: var(--info-bg); color: var(--info); }
+        .stat-icon.green { background: var(--success-bg); color: var(--success); }
+        .stat-icon.amber { background: var(--warning-bg); color: var(--warning); }
+        .stat-icon.red { background: var(--danger-bg); color: var(--danger); }
+        .stat-value {
+            font-size: 24px; font-weight: 700;
+            letter-spacing: -0.5px; line-height: 1;
+        }
+        .stat-label {
+            font-size: 12px; color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        /* ── Layout ─────────────────────────────────── */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1200px;
+            margin: 24px auto 60px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+
+        /* ── Cards ──────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: var(--transition);
+        }
+        .card-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 20px;
+        }
+        .card-header h2 {
+            font-size: 15px; font-weight: 600;
+            letter-spacing: -0.2px;
+            flex: 1;
+        }
+        .card-header .dot {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: var(--primary);
+            flex-shrink: 0;
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        /* ── Tabs ───────────────────────────────────── */
+        .tabs {
+            display: flex; gap: 2px;
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .tab {
+            flex: 1;
+            padding: 9px 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            background: none;
+            white-space: nowrap;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .tab.active {
+            background: var(--surface);
+            color: var(--text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .tab:hover:not(.active) { color: var(--text); }
+
+        /* ── Forms ──────────────────────────────────── */
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: fadeSlideIn 0.25s ease; }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 13px; font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+        textarea { resize: vertical; min-height: 130px; font-size: 13px; }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+        /* Toggle switch */
+        .toggle-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+        }
+        .toggle-row:hover { border-color: var(--border-light); }
+        .toggle-row input[type="checkbox"] { display: none; }
+        .toggle-switch {
+            width: 40px; height: 22px;
+            background: var(--border);
+            border-radius: 11px;
+            position: relative;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px; left: 2px;
+            transition: var(--transition);
+        }
+        .toggle-row.checked .toggle-switch {
+            background: var(--primary);
+        }
+        .toggle-row.checked .toggle-switch::after {
+            left: 20px;
+        }
+        .toggle-label { font-size: 13px; color: var(--text); font-weight: 500; }
+
+        .row { display: flex; gap: 12px; }
+        .row > * { flex: 1; }
+
+        /* File upload zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--surface2);
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.05);
+        }
+        .upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+        .upload-zone .upload-text {
+            font-size: 14px; color: var(--text);
+            font-weight: 500;
+        }
+        .upload-zone .upload-hint {
+            font-size: 12px; color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .upload-zone input[type="file"] {
+            position: absolute; inset: 0;
+            opacity: 0; cursor: pointer;
+        }
+        .upload-file-info {
+            display: none;
+            align-items: center; gap: 10px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .upload-file-info.show { display: flex; }
+        .upload-file-info .remove-file {
+            margin-left: auto;
+            background: none; border: none;
+            color: var(--danger); cursor: pointer;
+            font-size: 16px; padding: 2px 6px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 22px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: -0.2px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+            pointer-events: none;
+        }
+        .btn:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--surface3); border-color: var(--border-light); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: var(--radius-xs); }
+        .btn-xs { padding: 4px 10px; font-size: 11px; border-radius: var(--radius-xs); }
+        .btn-full { width: 100%; justify-content: center; }
+
+        /* ── Badges ─────────────────────────────────── */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px; font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .badge-pending { background: var(--warning-bg); color: var(--warning); }
+        .badge-running { background: var(--info-bg); color: var(--info); }
+        .badge-completed { background: var(--success-bg); color: var(--success); }
+        .badge-failed { background: var(--danger-bg); color: var(--danger); }
+        .badge-partial { background: rgba(245,158,11,0.12); color: var(--warning); }
+
+        /* ── Job List ───────────────────────────────── */
+        .job-toolbar {
+            display: flex; gap: 8px; margin-bottom: 14px;
+        }
+        .job-toolbar .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 13px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xs);
+            color: var(--text);
+        }
+        .job-toolbar .search-input:focus {
+            outline: none; border-color: var(--primary);
+        }
+        .job-list { max-height: 450px; overflow-y: auto; }
+        .job-list::-webkit-scrollbar { width: 5px; }
+        .job-list::-webkit-scrollbar-track { background: transparent; }
+        .job-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .job-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        .job-item:hover {
+            border-color: var(--primary);
+            background: var(--surface2);
+        }
+        .job-item.selected {
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.08);
+        }
+        .job-icon {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-xs);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+            background: var(--surface3);
+        }
+        .job-info { flex: 1; min-width: 0; }
+        .job-info .job-title {
+            font-size: 13px; font-weight: 600;
+            color: var(--text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .job-info .job-meta {
+            font-size: 11px; color: var(--text-secondary);
+            margin-top: 2px;
+            display: flex; gap: 8px; align-items: center;
+        }
+        .job-progress {
+            width: 100%;
+            height: 3px;
+            background: var(--surface3);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .job-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .job-actions {
+            display: flex; gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .pagination {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; margin-top: 14px;
+        }
+        .pagination .page-info {
+            font-size: 12px; color: var(--text-secondary);
+        }
+
+        /* ── Results ────────────────────────────────── */
+        .results-header {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .results-header .result-info {
+            font-size: 13px; color: var(--text-secondary);
+        }
+        .result-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 18px;
+            margin-bottom: 14px;
+            transition: var(--transition);
+        }
+        .result-card:hover { border-color: var(--border-light); }
+        .result-card .result-url {
+            font-size: 13px; color: var(--primary-light);
+            margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+            word-break: break-all;
+        }
+        .result-card .result-url a {
+            color: var(--primary-light);
+            text-decoration: none;
+        }
+        .result-card .result-url a:hover { text-decoration: underline; }
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+        }
+        @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+        .result-field {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(42,46,63,0.5);
+        }
+        .result-field:last-child { border-bottom: none; }
+        .result-field .key {
+            font-size: 10px; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .result-field .value {
+            font-size: 13px; word-break: break-word;
+        }
+        .result-field .value.empty {
+            color: var(--text-muted); font-style: italic;
+        }
+        .copy-btn {
+            background: none; border: none;
+            color: var(--text-muted); cursor: pointer;
+            padding: 2px 6px; font-size: 12px;
+            transition: var(--transition);
+            opacity: 0;
+        }
+        .result-field:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { color: var(--primary); }
+        .copy-btn.copied { color: var(--success); }
+
+        .export-bar {
+            display: flex; gap: 8px; margin-top: 16px;
+            padding-top: 14px; border-top: 1px solid var(--border);
+        }
+
+        /* ── Toast ──────────────────────────────────── */
+        .toast-container {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 1000;
+            display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            box-shadow: var(--shadow-lg);
+            animation: toastIn 0.3s ease;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto;
+            max-width: 380px;
+        }
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--danger); }
+        .toast.info { border-left: 3px solid var(--info); }
+        .toast.removing { animation: toastOut 0.3s ease forwards; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(40px); }
+        }
+
+        /* ── Spinner ────────────────────────────────── */
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .spinner-sm { width: 14px; height: 14px; border-width: 2px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Empty State ────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state .icon { font-size: 44px; margin-bottom: 12px; opacity: 0.4; }
+        .empty-state p { font-size: 14px; }
+        .empty-state .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+        /* ── Modal ──────────────────────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 900;
+            display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 600px; width: 90%;
+            max-height: 80vh; overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: fadeSlideIn 0.2s ease;
+        }
+        .modal h3 { font-size: 16px; margin-bottom: 12px; }
+        .modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        /* ── Skeleton loading ───────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: var(--radius-xs);
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .skeleton-text { height: 14px; margin-bottom: 8px; }
+        .skeleton-text.short { width: 60%; }
+        .skeleton-text.medium { width: 80%; }
+
+        /* ── Tooltip ────────────────────────────────── */
+        [data-tooltip] { position: relative; }
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; bottom: 100%; left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 10px;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xs);
+            font-size: 11px;
+            white-space: nowrap;
+            color: var(--text);
+            margin-bottom: 6px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <!-- ── Header ──────────────────────────────────────── -->
+    <header class="header">
+        <div class="header-logo">🕷️</div>
+        <div class="header-info">
+            <h1>Web Scraper Platform</h1>
+            <div class="header-subtitle">Extract structured data from any website with AI</div>
+        </div>
+        <div class="header-actions">
+            <span class="header-badge">🤖 DeepSeek AI</span>
+            <span id="headerStatus" style="font-size:12px;color:var(--success);display:flex;align-items:center;gap:6px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span> API Ready
+            </span>
+        </div>
+    </header>
+
+    <!-- ── Stats Bar ───────────────────────────────────── -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div>
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">Total Jobs</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div>
+                <div class="stat-value" id="statCompleted">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon amber">⏳</div>
+            <div>
+                <div class="stat-value" id="statRunning">0</div>
+                <div class="stat-label">Running / Pending</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">❌</div>
+            <div>
+                <div class="stat-value" id="statFailed">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Layout ─────────────────────────────────── -->
+    <div class="container">
+        <!-- LEFT: Scrape Form -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="dot"></span>
+                    <h2>New Scrape Job</h2>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('single')">🔗 Single URL</button>
+                    <button class="tab" onclick="switchTab('bulk')">📦 Bulk URLs</button>
+                    <button class="tab" onclick="switchTab('upload')">📤 Upload File</button>
+                </div>
+
+                <!-- Single URL -->
+                <form id="singleSection" class="form-section active" onsubmit="scrapeSingle(event)">
+                    <div class="form-group">
+                        <label>Website URL</label>
+                        <input type="text" id="singleUrl" placeholder="https://example.com" required autofocus>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Crawl Depth</label>
+                            <input type="number" id="singleDepth" value="2" min="0" max="5">
+                        </div>
+                    </div>
+                    <label class="toggle-row checked" id="toggleAI" onclick="toggleCheckbox('singleAI', 'toggleAI')">
+                        <input type="checkbox" id="singleAI" checked>
+                        <span class="toggle-switch"></span>
+                        <span class="toggle-label">🤖 Use AI Extraction (DeepSeek)</span>
+                    </label>
+                    <div style="height:16px;"></div>
+                    <button type="submit" class="btn btn-full" id="singleBtn">
+                        ⚡ Scrape URL
+                    </button>
+                </form>
+
+                <!-- Bulk URLs -->
+                <form id="bulkSection" class="form-section" onsubmit="scrapeBulk(event)">
+                    <div class="form-group">
+                        <label>URLs (one per line)</label>
+                        <textarea id="bulkUrls" placeholder="https://example.com&#10;https://example.org&#10;https://example.net" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Crawl Depth</label>
+                        <input type="number" id="bulkDepth" value="2" min="0" max="5">
+                    </div>
+                    <label class="toggle-row checked" id="toggleBulkAI" onclick="toggleCheckbox('bulkAI', 'toggleBulkAI')">
+                        <input type="checkbox" id="bulkAI" checked>
+                        <span class="toggle-switch"></span>
+                        <span class="toggle-label">🤖 Use AI Extraction (DeepSeek)</span>
+                    </label>
+                    <div style="height:16px;"></div>
+                    <button type="submit" class="btn btn-full" id="bulkBtn">
+                        📦 Scrape All URLs
+                    </button>
+                </form>
+
+                <!-- Upload File -->
+                <form id="uploadSection" class="form-section" onsubmit="scrapeUpload(event)">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📤</div>
+                        <div class="upload-text">Drop Excel/CSV file here</div>
+                        <div class="upload-hint">or click to browse &middot; .xlsx, .csv</div>
+                        <input type="file" id="uploadFile" accept=".xlsx,.csv" onchange="handleFileSelect(event)">
+                    </div>
+                    <div class="upload-file-info" id="uploadFileInfo">
+                        📄 <span id="uploadFileName"></span>
+                        <button type="button" class="remove-file" onclick="clearFile()" title="Remove file">✕</button>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label>Crawl Depth</label>
+                        <input type="number" id="uploadDepth" value="2" min="0" max="5">
+                    </div>
+                    <button type="submit" class="btn btn-full" id="uploadBtn">
+                        📤 Upload &amp; Scrape
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT: Jobs &amp; Results -->
+        <div>
+            <!-- Recent Jobs -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="dot"></span>
+                    <h2>Recent Jobs</h2>
+                    <button class="btn btn-secondary btn-sm" onclick="loadJobs()" data-tooltip="Refresh jobs list">↻</button>
+                </div>
+                <div class="job-toolbar">
+                    <input type="text" class="search-input" placeholder="🔍 Filter jobs..." id="jobSearch" oninput="filterJobs()">
+                </div>
+                <div class="job-list" id="jobList">
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <p>No jobs yet</p>
+                        <span class="hint">Start by scraping a URL above!</span>
+                    </div>
+                </div>
+                <div class="pagination" id="jobPagination"></div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="card" style="margin-top:24px;" id="resultsCard">
+                <div class="card-header">
+                    <span class="dot"></span>
+                    <h2>Results</h2>
+                    <span id="resultTitle" style="font-size:12px;color:var(--text-secondary);"></span>
+                </div>
+                <div id="resultsContainer">
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <p>Click a job to view results</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Toast Container ─────────────────────────────── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ── Error Detail Modal ──────────────────────────── -->
+    <div class="modal-overlay" id="errorModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <h3 id="modalTitle">⚠️ Error Details</h3>
+            <p id="modalBody"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Constants ────────────────────────────────────
+        const API_BASE = window.location.port === '8000' ? '' : 'http://localhost:8000';
+        const API = API_BASE + '/api/v1/scrape';
+        let activeTab = 'single';
+        let currentPage = 1;
+        let totalJobs = 0;
+        let selectedJobId = null;
+        let activePolls = {};
+        let allJobs = [];
+
+        // ── Tab Switching ────────────────────────────────
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tab + 'Section').classList.add('active');
+        }
+
+        // ── Toggle Checkbox ──────────────────────────────
+        function toggleCheckbox(cbId, rowId) {
+            const cb = document.getElementById(cbId);
+            cb.checked = !cb.checked;
+            const row = document.getElementById(rowId);
+            if (cb.checked) row.classList.add('checked');
+            else row.classList.remove('checked');
+        }
+
+        // ── Toast System ─────────────────────────────────
+        let toastId = 0;
+        function showToast(msg, type, duration) {
+            type = type || 'info';
+            duration = duration || 3500;
+            const container = document.getElementById('toastContainer');
+            const id = 'toast-' + (++toastId);
+            const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.id = id;
+            toast.innerHTML = '<span>' + (icons[type] || '') + '</span><span>' + msg + '</span>';
+            container.appendChild(toast);
+
+            setTimeout(function() {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('removing');
+                    setTimeout(function() { el.remove(); }, 300);
+                }
+            }, duration);
+        }
+
+        // ── Modal ────────────────────────────────────────
+        function showModal(title, body) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').textContent = body;
+            document.getElementById('errorModal').classList.add('show');
+        }
+        function closeModal() {
+            document.getElementById('errorModal').classList.remove('show');
+        }
+
+        // ── File Upload Handling ─────────────────────────
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'csv'].includes(ext)) {
+                showToast('Only .xlsx and .csv files are supported', 'error');
+                event.target.value = '';
+                return;
+            }
+            document.getElementById('uploadFileName').textContent = file.name + ' (' + formatBytes(file.size) + ')';
+            document.getElementById('uploadFileInfo').classList.add('show');
+        }
+        function clearFile() {
+            document.getElementById('uploadFile').value = '';
+            document.getElementById('uploadFileInfo').classList.remove('show');
+        }
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // Drag &amp; drop for upload zone
+        const uploadZone = document.getElementById('uploadZone');
+        if (uploadZone) {
+            uploadZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+            uploadZone.addEventListener('dragleave', function() {
+                uploadZone.classList.remove('dragover');
+            });
+            uploadZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    document.getElementById('uploadFile').files = e.dataTransfer.files;
+                    handleFileSelect({ target: { files: [file] } });
+                }
+            });
+        }
+
+        // ── Stats ────────────────────────────────────────
+        async function loadStats() {
+            try {
+                const resAll = await fetch(API + '/jobs?page=1&page_size=100');
+                const dataAll = await resAll.json();
+                const jobs = dataAll.jobs || [];
+                document.getElementById('statTotal').textContent = dataAll.total || 0;
+                let comp = 0, run = 0, fail = 0;
+                jobs.forEach(function(j) {
+                    if (j.status === 'completed') comp++;
+                    else if (j.status === 'running' || j.status === 'pending') run++;
+                    else if (j.status === 'failed' || j.status === 'partial') fail++;
+                });
+                document.getElementById('statCompleted').textContent = comp;
+                document.getElementById('statRunning').textContent = run;
+                document.getElementById('statFailed').textContent = fail;
+            } catch (e) {
+                // Stats are non-critical
+            }
+        }
+
+        // ── Job List ─────────────────────────────────────
+        async function loadJobs(page) {
+            page = page || currentPage;
+            currentPage = page;
+            const list = document.getElementById('jobList');
+            list.innerHTML = '<div class="skeleton skeleton-text" style="height:48px;"></div><div class="skeleton skeleton-text short" style="height:48px;"></div><div class="skeleton skeleton-text medium" style="height:48px;"></div>';
+
+            try {
+                const res = await fetch(API + '/jobs?page=' + page + '&page_size=10');
+                const data = await res.json();
+                allJobs = data.jobs || [];
+                totalJobs = data.total || 0;
+                renderJobs(allJobs);
+                renderPagination(data);
+                loadStats();
+            } catch (e) {
+                list.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load jobs</p></div>';
+            }
+        }
+
+        function renderJobs(jobs) {
+            const list = document.getElementById('jobList');
+            if (!jobs || jobs.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>No jobs found</p><span class="hint">Start by scraping a URL!</span></div>';
+                return;
+            }
+            list.innerHTML = jobs.map(function(j) {
+                const icon = j.job_type === 'single' ? '🔗' : j.job_type === 'bulk' ? '📦' : '📤';
+                const progress = j.total_urls > 0 ?
+                    Math.round(((j.completed_urls + (j.failed_urls || 0)) / j.total_urls) * 100) : 0;
+                const isRunning = j.status === 'running' || j.status === 'pending';
+                const isSelected = j.job_id === selectedJobId;
+                var html = '<div class="job-item' + (isSelected ? ' selected' : '') + '" onclick="viewResults(\'' + j.job_id + '\')" id="job-' + j.job_id + '">';
+                html += '<div class="job-icon">' + icon + '</div>';
+                html += '<div class="job-info">';
+                html += '<div class="job-title">' + j.job_type.toUpperCase() + ' · ' + j.total_urls + ' URL' + (j.total_urls > 1 ? 's' : '') + '</div>';
+                html += '<div class="job-meta">';
+                html += '<span>' + timeAgo(j.created_at) + '</span>';
+                html += '<span>·</span>';
+                html += '<span>' + j.completed_urls + '/' + j.total_urls + ' done</span>';
+                if (j.failed_urls > 0) {
+                    html += '<span>·</span><span style="color:var(--danger);">' + j.failed_urls + ' failed</span>';
+                }
+                html += '</div>';
+                if (isRunning) {
+                    html += '<div class="job-progress"><div class="job-progress-fill" style="width:' + progress + '%"></div></div>';
+                }
+                html += '</div>';
+                html += '<span class="badge badge-' + j.status + '">' + j.status + '</span>';
+                html += '</div>';
+                return html;
+            }).join('');
+
+            // Auto-select first completed job
+            if (!selectedJobId && jobs.length > 0) {
+                var firstCompleted = null;
+                for (var i = 0; i < jobs.length; i++) {
+                    if (jobs[i].status === 'completed' || jobs[i].status === 'partial') {
+                        firstCompleted = jobs[i];
+                        break;
+                    }
+                }
+                if (firstCompleted) {
+                    viewResults(firstCompleted.job_id);
+                }
+            }
+        }
+
+        function filterJobs() {
+            const query = document.getElementById('jobSearch').value.toLowerCase();
+            const filtered = allJobs.filter(function(j) {
+                return j.job_type.toLowerCase().indexOf(query) >= 0 ||
+                       j.status.toLowerCase().indexOf(query) >= 0 ||
+                       j.job_id.toLowerCase().indexOf(query) >= 0;
+            });
+            renderJobs(filtered);
+        }
+
+        function renderPagination(data) {
+            const pag = document.getElementById('jobPagination');
+            const totalPages = Math.ceil(data.total / data.page_size);
+            if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+            var html = '';
+            html += '<button class="btn btn-xs btn-secondary" onclick="loadJobs(1)"' + (data.page <= 1 ? ' disabled' : '') + '>«</button>';
+            html += '<button class="btn btn-xs btn-secondary" onclick="loadJobs(' + (data.page - 1) + ')"' + (data.page <= 1 ? ' disabled' : '') + '>‹</button>';
+            html += '<span class="page-info">Page ' + data.page + ' of ' + totalPages + '</span>';
+            html += '<button class="btn btn-xs btn-secondary" onclick="loadJobs(' + (data.page + 1) + ')"' + (data.page >= totalPages ? ' disabled' : '') + '>›</button>';
+            html += '<button class="btn btn-xs btn-secondary" onclick="loadJobs(' + totalPages + ')"' + (data.page >= totalPages ? ' disabled' : '') + '>»</button>';
+            pag.innerHTML = html;
+        }
+
+        function timeAgo(dateStr) {
+            const date = new Date(dateStr);
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            return Math.floor(seconds / 86400) + 'd ago';
+        }
+
+        // ── Scrape: Single URL ───────────────────────────
+        async function scrapeSingle(e) {
+            e.preventDefault();
+            const useAI = document.getElementById('singleAI').checked;
+            const endpoint = useAI ? '/url/ai' : '/url';
+            const btn = document.getElementById('singleBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner spinner-sm"></span> Submitting...';
+            try {
+                const res = await fetch(API + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: document.getElementById('singleUrl').value.trim(),
+                        crawl_depth: parseInt(document.getElementById('singleDepth').value)
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Scrape failed');
+                }
+                const data = await res.json();
+                showToast('Job created! Scraping started.', 'success');
+                document.getElementById('singleUrl').value = '';
+                loadJobs();
+                pollJob(data.job_id);
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '⚡ Scrape URL';
+            }
+        }
+
+        // ── Scrape: Bulk ─────────────────────────────────
+        async function scrapeBulk(e) {
+            e.preventDefault();
+            const useAI = document.getElementById('bulkAI').checked;
+            const endpoint = useAI ? '/bulk/ai' : '/bulk';
+            const btn = document.getElementById('bulkBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner spinner-sm"></span> Submitting...';
+            const urls = document.getElementById('bulkUrls').value.split('\n').map(function(u) { return u.trim(); }).filter(Boolean);
+            if (urls.length === 0) {
+                showToast('Please enter at least one URL', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '📦 Scrape All URLs';
+                return;
+            }
+            try {
+                const res = await fetch(API + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        urls: urls,
+                        crawl_depth: parseInt(document.getElementById('bulkDepth').value)
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Bulk scrape failed');
+                }
+                const data = await res.json();
+                showToast('Bulk job created with ' + urls.length + ' URLs', 'success');
+                document.getElementById('bulkUrls').value = '';
+                loadJobs();
+                pollJob(data.job_id);
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📦 Scrape All URLs';
+            }
+        }
+
+        // ── Scrape: Upload ───────────────────────────────
+        async function scrapeUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('uploadFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                showToast('Please select a file to upload', 'error');
+                return;
+            }
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner spinner-sm"></span> Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const depth = parseInt(document.getElementById('uploadDepth').value);
+                const res = await fetch(API + '/upload?crawl_depth=' + depth, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Upload failed');
+                }
+                const data = await res.json();
+                showToast('File uploaded! Processing ' + data.total_urls + ' URLs', 'success');
+                clearFile();
+                loadJobs();
+                pollJob(data.job_id);
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📤 Upload &amp; Scrape';
+            }
+        }
+
+        // ── Poll Job ──────────────────────────────────────
+        function pollJob(jobId) {
+            if (activePolls[jobId]) return;
+            var polls = 0;
+            var maxPolls = 60;
+            var interval;
+
+            function stopPoll() {
+                clearInterval(interval);
+                delete activePolls[jobId];
+            }
+
+            async function poll() {
+                polls++;
+                try {
+                    const res = await fetch(API + '/status/' + jobId);
+                    if (!res.ok) { stopPoll(); return; }
+                    const data = await res.json();
+                    updateJobItem(data);
+
+                    if (data.status === 'completed' || data.status === 'failed' || data.status === 'partial' || polls >= maxPolls) {
+                        stopPoll();
+                        loadJobs();
+                        viewResults(jobId);
+                        var msg = data.status === 'completed' ? 'Scraping completed!' :
+                                  data.status === 'partial' ? 'Scraping completed with some failures.' :
+                                  data.status === 'failed' ? 'Scraping failed.' : 'Job timed out.';
+                        var type = data.status === 'completed' ? 'success' : data.status === 'failed' ? 'error' : 'info';
+                        showToast(msg, type);
+                    }
+                } catch (e) { stopPoll(); }
+            }
+
+            interval = setInterval(poll, 2000);
+            activePolls[jobId] = interval;
+            poll(); // immediate first poll
+        }
+
+        function updateJobItem(statusData) {
+            const jobEl = document.getElementById('job-' + statusData.job_id);
+            if (!jobEl) return;
+            const progress = statusData.progress_percent || 0;
+            const badgeEl = jobEl.querySelector('.badge');
+            const progressEl = jobEl.querySelector('.job-progress-fill');
+            if (badgeEl) {
+                badgeEl.className = 'badge badge-' + statusData.status;
+                badgeEl.textContent = statusData.status;
+            }
+            if (progressEl) {
+                progressEl.style.width = progress + '%';
+            }
+            const metaEl = jobEl.querySelector('.job-meta');
+            if (metaEl) {
+                metaEl.innerHTML = '<span>' + statusData.completed_urls + '/' + statusData.total_urls + ' done</span>' +
+                    (statusData.failed_urls > 0 ? '<span>·</span><span style="color:var(--danger);">' + statusData.failed_urls + ' failed</span>' : '') +
+                    '<span>·</span><span>' + Math.round(progress) + '%</span>';
+            }
+        }
+
+        // ── View Results ──────────────────────────────────
+        async function viewResults(jobId) {
+            selectedJobId = jobId;
+            // Update selection styling
+            document.querySelectorAll('.job-item').forEach(function(el) { el.classList.remove('selected'); });
+            const jobEl = document.getElementById('job-' + jobId);
+            if (jobEl) jobEl.classList.add('selected');
+
+            const container = document.getElementById('resultsContainer');
+            const title = document.getElementById('resultTitle');
+            container.innerHTML = '<div class="skeleton skeleton-text" style="height:60px;"></div><div class="skeleton skeleton-text short" style="height:60px;"></div>';
+            title.textContent = '· Loading...';
+
+            try {
+                const res = await fetch(API + '/result/' + jobId);
+                const data = await res.json();
+                title.textContent = '· ' + data.total_urls + ' URL' + (data.total_urls > 1 ? 's' : '') + ' · ' + data.status;
+
+                if (!data.results || data.results.length === 0) {
+                    var statusHtml = data.status === 'running' ? '<div style="margin-top:12px;"><span class="spinner spinner-sm"></span> Processing...</div>' : '';
+                    container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No results yet</p><span class="badge badge-' + data.status + '">' + data.status + '</span>' + statusHtml + '</div>';
+                    return;
+                }
+
+                var html = '<div class="results-header"><span class="result-info">' + data.completed_urls + ' completed';
+                if (data.failed_urls > 0) {
+                    html += ' · <span style="color:var(--danger);">' + data.failed_urls + ' failed</span>';
+                }
+                html += '</span></div>';
+
+                data.results.forEach(function(r) {
+                    html += '<div class="result-card">';
+                    html += '<div class="result-url">🔗 <a href="' + r.url + '" target="_blank" rel="noopener">' + r.url + '</a></div>';
+                    html += '<div class="result-grid">';
+                    html += renderField('Organization', r.organization_name);
+                    html += renderField('Page Title', r.page_title);
+                    html += renderField('Description', r.description);
+                    html += renderField('Address', r.address);
+                    html += renderField('Phone', (r.phone_numbers || []).join(', '));
+                    html += renderField('Email', (r.email_addresses || []).join(', '));
+                    html += renderField('Contact Person', r.contact_person);
+                    if (r.social_media_links && Object.keys(r.social_media_links).length > 0) {
+                        var smHtml = '';
+                        Object.entries(r.social_media_links).forEach(function(entry) {
+                            smHtml += '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface3);padding:2px 8px;border-radius:4px;margin:2px;font-size:12px;">' + entry[0] + ': ' + entry[1] + '</span>';
+                        });
+                        html += renderField('Social Media', smHtml);
+                    }
+                    html += '<div class="result-field"><div class="key">Pages Crawled</div><div class="value">' + (r.scraped_pages_count || 0) + '</div></div>';
+                    html += '</div></div>';
+                });
+
+                html += '<div class="export-bar">';
+                html += '<button class="btn btn-secondary btn-sm" onclick="exportResults(\'' + jobId + '\', \'json\')">📥 JSON</button>';
+                html += '<button class="btn btn-secondary btn-sm" onclick="exportResults(\'' + jobId + '\', \'csv\')">📊 CSV</button>';
+                html += '<button class="btn btn-secondary btn-sm" onclick="exportResults(\'' + jobId + '\', \'xlsx\')">📈 Excel</button>';
+                html += '<span style="flex:1;"></span>';
+                html += '<button class="btn btn-secondary btn-sm" onclick="copyAllResults(\'' + jobId + '\')">📋 Copy All</button>';
+                html += '</div>';
+
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load results</p></div>';
+                title.textContent = '';
+            }
+        }
+
+        function renderField(label, value) {
+            if (!value || value === 'null' || value === '') return '';
+            var id = 'field-' + Math.random().toString(36).substring(2, 8);
+            return '<div class="result-field" id="' + id + '"><div class="key">' + label + '</div><div class="value">' + value + ' <button class="copy-btn" onclick="copyText(\'' + id + '\', \'' + escapeHtml(String(value)) + '\')" data-tooltip="Copy">📋</button></div></div>';
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        async function copyText(fieldId, text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const btn = document.querySelector('#' + fieldId + ' .copy-btn');
+                if (btn) {
+                    btn.textContent = '✅';
+                    btn.classList.add('copied');
+                    setTimeout(function() { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1500);
+                }
+            } catch (e) {
+                showToast('Failed to copy', 'error');
+            }
+        }
+
+        async function copyAllResults(jobId) {
+            try {
+                const res = await fetch(API + '/result/' + jobId);
+                const data = await res.json();
+                const text = JSON.stringify(data, null, 2);
+                await navigator.clipboard.writeText(text);
+                showToast('All results copied to clipboard!', 'success');
+            } catch (e) {
+                showToast('Failed to copy results', 'error');
+            }
+        }
+
+        // ── Export ────────────────────────────────────────
+        function exportResults(jobId, format) {
+            const url = API + '/export/' + jobId + '?format=' + format;
+            window.open(url, '_blank');
+            showToast('Exporting as ' + format.toUpperCase() + '...', 'info', 2000);
+        }
+
+        // ── Keyboard Shortcuts ────────────────────────────
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (activeTab === 'single') scrapeSingle(e);
+                else if (activeTab === 'bulk') scrapeBulk(e);
+                else if (activeTab === 'upload') scrapeUpload(e);
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                loadJobs();
+                showToast('Jobs refreshed', 'info', 1500);
+            }
+        });
+
+        // ── API Health Check ──────────────────────────────
+        async function checkHealth() {
+            try {
+                const res = await fetch(API_BASE + '/health');
+                if (res.ok) {
+                    document.getElementById('headerStatus').innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span> API Ready';
+                } else {
+                    throw new Error('Unhealthy');
+                }
+            } catch (e) {
+                document.getElementById('headerStatus').innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:var(--danger);display:inline-block;"></span> API Offline';
+                document.getElementById('headerStatus').style.color = 'var(--danger)';
+            }
+        }
+
+        // ── Init ──────────────────────────────────────────
+        checkHealth();
+        loadJobs();
+        setInterval(loadJobs, 15000);
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>
