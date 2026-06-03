@@ -16,8 +16,8 @@
 set -e
 
 # ── Config ─────────────────────────────────────────────────────────────────
-# >>> CHANGE THIS to your actual Git repository URL <<<
-GIT_REPO="https://github.com/YOUR_USERNAME/web-scraper-platform.git"
+# >>> After pushing to GitHub, this is auto-set. Update if needed. <<<
+GIT_REPO="https://github.com/pritam8777/web_scrape.git"
 GIT_BRANCH="main"
 
 APP_DIR="/opt/web-scraper"
